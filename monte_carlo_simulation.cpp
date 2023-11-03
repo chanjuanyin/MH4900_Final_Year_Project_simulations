@@ -29,18 +29,24 @@ void simulate_helper(xt::xarray<double> &arr, int start, int end, double x_0, do
     double absolute_sum = 0.;
     bool sgn = true;
     while (count<numSims) {
-        xt::xarray<double> random_array = xt::random::exponential({numSims}, 1/a);
+        xt::xarray<double> random_array = xt::random::exponential({numSims}, a);
         for (int i=0; i<numSims; i++) {
             absolute_sum += random_array[i];
             if (sgn) {
-                integral_sum += min(random_array[i], t-absolute_sum);
+                integral_sum += random_array[i];
                 sgn = false;
             }
             else {
-                integral_sum -= min(random_array[i], t-absolute_sum);
+                integral_sum -= random_array[i];
                 sgn = true;
             }
             if (absolute_sum >= t) {
+                if (sgn) {
+                    integral_sum += (absolute_sum - t);
+                }
+                else {
+                    integral_sum -= (absolute_sum - t);
+                }
                 local_arr[count++] = integral_sum;
                 absolute_sum = 0.;
                 integral_sum = 0.;
@@ -81,7 +87,7 @@ double simulate(double x_0, double t, double a, double v, int total_sims, int nu
     }
     double double_1 = sqrt(a*a + v*v);
     xt::xarray<double> factor_1 = {double_1};
-    arr = factor_1 * ( (xt::exp(-(x_0 + v * arr)) + xt::exp(x_0 + v * arr)) + xt::exp(-(x_0 - v * arr)) + xt::exp(x_0 - v * arr));
+    arr = factor_1 * ( xt::exp(-(x_0 + v * arr)) + xt::exp(x_0 + v * arr) + xt::exp(-(x_0 - v * arr)) + xt::exp(x_0 - v * arr));
     double avg = xt::average(arr)[0];
     return avg;
 }
