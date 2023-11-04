@@ -1,10 +1,22 @@
-#include<bits/stdc++.h>
+#include <bits/stdc++.h>
 #include <string>
 #include <stdlib.h>
 #include <iostream>
+#include <istream>
+#include <fstream>
+#include <thread>
+#include <vector>
+#include <chrono>
+#include <cstdlib>
+#include <filesystem>
 #include <xtensor/xarray.hpp>
+#include <xtensor/xrandom.hpp>
 #include <xtensor/xio.hpp>
 #include <xtensor/xview.hpp>
+#include <xtensor/xcsv.hpp>
+#include <xtensor/xnpy.hpp>
+// #include <xtensor/xjson.hpp>
+
 using namespace std;
 typedef long long ll;
 typedef pair<int,int> PP;
@@ -29,5 +41,17 @@ int main()
     cout << arr << endl;
     xt::xarray<double> arr2 = xt::ones<double>({3,4}) * 0.5;
     cout << arr2 << endl;
+    std::system("cd ..; mkdir haha");
+    string directoryPath = "../haha2";
+    if (!std::__fs::filesystem::exists(directoryPath)) {
+        // Directory does not exist, so create it
+        if (std::__fs::filesystem::create_directory(directoryPath)) {
+            std::cout << "Directory created successfully." << std::endl;
+        } else {
+            std::cerr << "Failed to create directory." << std::endl;
+        }
+    } else {
+        std::cout << "Directory already exists." << std::endl;
+    }
     return 0;
 }
