@@ -100,15 +100,13 @@ double simulate(double x_0, double t, double a, double v, int total_sims, int nu
         + xt::exp((arr_X_tau_Nt - arr_t_tau_Nt) * v) + xt::exp((-arr_X_tau_Nt + arr_t_tau_Nt) * v) ) + 
         factor_2 * ( xt::exp((arr_X_tau_Nt + arr_t_tau_Nt) * v) - xt::exp((arr_X_tau_Nt - arr_t_tau_Nt) * v)
         - xt::exp((-arr_X_tau_Nt - arr_t_tau_Nt) * v) + xt::exp((-arr_X_tau_Nt + arr_t_tau_Nt) * v) );
-
-    // arr_w = factor_1 * ( xt::exp((arr_X_tau_Nt + arr_t_tau_Nt) * v) + xt::exp((-arr_X_tau_Nt - arr_t_tau_Nt) * v) );
     
     arr_outcome = arr_w * arr_product;
     double avg = xt::average(arr_outcome)[0];
     return avg * exp(t);
 }
 
-void find_optimal_numThreads() // Optimal should be 6 threads
+void find_optimal_numThreads() // Optimal should be 5 threads
 {
     for (int numThreads = 1; numThreads <= 20; numThreads++) {
         // Record the start time
@@ -136,7 +134,7 @@ int main()
             double x = static_cast<double>(i);
             double t = static_cast<double>(j);
             auto start_time = std::chrono::high_resolution_clock::now();
-            double estimated_value = simulate(x, t, 0.3, 0.3, 1000000, 6); // Optimal is 6 threads
+            double estimated_value = simulate(x, t, 0.3, 0.3, 1000000, 6); // Optimal is 5 threads
             auto end_time = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> elapsed_time = end_time - start_time;
             cout << "x = " << x << ", t = " << t << ", estimated_value = " << estimated_value << ", Execution time: " 
