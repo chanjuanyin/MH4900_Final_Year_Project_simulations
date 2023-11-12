@@ -31,7 +31,7 @@ void simulate_helper(xt::xarray<double> &arr, int start, int end, double x_0, do
     double absolute_sum = 0.;
     bool sgn = true;
     while (count<numSims) {
-        xt::xarray<double> random_array = xt::random::exponential({numSims}, a);
+        xt::xarray<double> random_array = xt::random::exponential({numSims}, a); // poisson process with every jump interval (\tau_i - \tau_{i-1}) modelled by exponential distribution with \lambda = a
         for (int i=0; i<numSims; i++) {
             absolute_sum += random_array[i];
             if (sgn) {
