@@ -24,7 +24,7 @@ typedef pair<int,int> PP;
 typedef double ld;
 const double eps=1e-6;
 
-double simulate_recursion(double t, double x_0, double a, double v) {
+double simulate_recursion(double x_0, double t, double a, double v) {
     std::random_device random_seed;  // Obtain a random seed from the hardware
     std::mt19937 generator(random_seed()); // Standard Mersenne Twister engine
     std::exponential_distribution<double> exponential_distribution(1.);
@@ -36,21 +36,11 @@ double simulate_recursion(double t, double x_0, double a, double v) {
     while (tau_Nt + tau_diff < t) {
         X_tau_Nt += tau_diff * uniform_distribution(generator);
         tau_Nt += tau_diff;
-        // *********** Approach 1 ***************
-        // double V = 0.;
-        // for (int i=0; i<100; i++) {
-        //     V += simulate_recursion(t - tau_Nt, X_tau_Nt, a, v);
-        // }
-        // V /= 100.;
-        // *********** But doing this will make the programme run very very slow ***************
-
-        // *********** Approach 2 ***************
-        double V = simulate_recursion(t - tau_Nt, X_tau_Nt, a, v);
-        // *********** This is faster, but when t gets larger, it will become very unstable ***************
+        double V = simulate_recursion(X_tau_Nt, t - tau_Nt, a, v); // Recursion branching happens here
         output *= tau_diff * V;
         tau_diff = exponential_distribution(generator);
     }
-    output *= 3 * (1 + sqrt(2)) / ((X_tau_Nt + t - tau_Nt) * (X_tau_Nt + t - tau_Nt)) + 3 * (1 - sqrt(2)) / ((X_tau_Nt - t + tau_Nt) * (X_tau_Nt - t + tau_Nt));
+    output *= 3 * (1 + v) / ((X_tau_Nt + t - tau_Nt) * (X_tau_Nt + t - tau_Nt)) + 3 * (1 - v) / ((X_tau_Nt - t + tau_Nt) * (X_tau_Nt - t + tau_Nt));
     return output * exp(t);
 }
 
@@ -58,7 +48,7 @@ void simulate_helper(xt::xarray<double> &arr, int start, int end, double x_0, do
     int numSims = end - start;
     xt::xarray<double> local_arr = xt::zeros<double>({numSims});
     for (int i=0; i<numSims; i++) {
-        local_arr[i] = simulate_recursion(t, x_0, a, v);
+        local_arr[i] = simulate_recursion(x_0, t, a, v);
     }
     // Your critical section logic here
     {
@@ -99,7 +89,7 @@ void find_optimal_numThreads() // Optimal should be 5 threads
         auto start_time = std::chrono::high_resolution_clock::now();
 
         // Run the Monte Carlo simulation
-        double estimated_value = simulate(1, 1, 0.3, 0.3, 1000000, 8);
+        double estimated_value = simulate(2., 1., 0.5, sqrt(2), 1000000, 8);
         cout << estimated_value << endl;
 
         // Record the end time
@@ -114,32 +104,31 @@ void find_optimal_numThreads() // Optimal should be 5 threads
 int main()
 {
     // find_optimal_numThreads();
-    xt::xarray<double> arr = xt::zeros<double>({11, 11});
-    for (int i = 5; i <= 10; i++) {
-        for (int j = 0; j <= 10; j++) {
-            if (i==0 && j==0) {
-                xt::view(arr, i, j) = 0.;
-            }
-            else {
-                double x = static_cast<double>(i);
-                double t = static_cast<double>(j);
-                auto start_time = std::chrono::high_resolution_clock::now();
-                double estimated_value = simulate(x, t, 0.3, sqrt(2), 1000, 6); // Optimal is 5 threads
-                auto end_time = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double> elapsed_time = end_time - start_time;
-                cout << "x = " << x << ", t = " << t << ", estimated_value = " << estimated_value << ", Execution time: " 
-                    << elapsed_time.count() << " seconds."<< endl;
-                xt::view(arr, i, j) = estimated_value;
-            }
+    for (int i = 2; i <= 10; i++) {
+        double x = static_cast<double>(i);
+        int num_estimations = (i-1)*10+1;
+        xt::xarray<double> arr = xt::zeros<double>({1, num_estimations});
+        for (int j = 0; j < num_estimations; j++) {
+            double t = static_cast<double>(j);
+            t /= 10.;
+            auto start_time = std::chrono::high_resolution_clock::now();
+            double estimated_value = simulate(x, t, 0.5, sqrt(2), 100000, 6); // Optimal is 5 threads
+            auto end_time = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> elapsed_time = end_time - start_time;
+            cout << "x = " << x << ", t = " << t << ", estimated_value = " << estimated_value << ", Execution time: " 
+                << elapsed_time.count() << " seconds."<< endl;
+            xt::view(arr, 0, j) = estimated_value;
         }
+        string directoryPath = "../Branching_01/output";
+        if (!std::__fs::filesystem::exists(directoryPath)) {
+            std::__fs::filesystem::create_directory(directoryPath);
+        }
+        string file_name = "../Branching_01/output/x_equals_";
+        file_name += to_string(i);
+        file_name += "_monte_carlo.csv";
+        std::ofstream out_file(file_name);
+        xt::dump_csv(out_file, arr);
+        cout << "x = "<< i << ", successfully exported to csv!" << endl;
     }
-    string directoryPath = "../Branching_01/output";
-    if (!std::__fs::filesystem::exists(directoryPath)) {
-        std::__fs::filesystem::create_directory(directoryPath);
-    }
-    string file_name = "../Branching_01/output/estimated_values.csv";
-    std::ofstream out_file(file_name);
-    xt::dump_csv(out_file, arr);
-    cout << "Successfully exported to csv!" << endl;
     return 0;
 }
