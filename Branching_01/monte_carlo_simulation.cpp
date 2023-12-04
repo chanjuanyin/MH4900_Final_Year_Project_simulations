@@ -24,7 +24,7 @@ typedef pair<int,int> PP;
 typedef double ld;
 const double eps=1e-6;
 
-double simulate_recursion(double x_0, double t, double a, double v) {
+double simulate_recursion(double t, double x_0, double a, double v) {
     std::random_device random_seed;  // Obtain a random seed from the hardware
     std::mt19937 generator(random_seed()); // Standard Mersenne Twister engine
     std::exponential_distribution<double> exponential_distribution(1.);
@@ -36,19 +36,19 @@ double simulate_recursion(double x_0, double t, double a, double v) {
     while (tau_Nt + tau_diff < t) {
         X_tau_Nt += tau_diff * uniform_distribution(generator);
         tau_Nt += tau_diff;
-        double V = simulate_recursion(X_tau_Nt, t - tau_Nt, a, v); // Recursion branching happens here
+        double V = simulate_recursion(t - tau_Nt, X_tau_Nt, a, v); // Recursion branching happens here
         output *= tau_diff * V;
         tau_diff = exponential_distribution(generator);
     }
-    output *= 3 * (1 + v) / ((X_tau_Nt + t - tau_Nt) * (X_tau_Nt + t - tau_Nt)) + 3 * (1 - v) / ((X_tau_Nt - t + tau_Nt) * (X_tau_Nt - t + tau_Nt));
+    output *= 3 * a * ( (1 + v) / ((X_tau_Nt + t - tau_Nt) * (X_tau_Nt + t - tau_Nt)) + (1 - v) / ((X_tau_Nt - t + tau_Nt) * (X_tau_Nt - t + tau_Nt)) );
     return output * exp(t);
 }
 
-void simulate_helper(xt::xarray<double> &arr, int start, int end, double x_0, double t, double a, double v, std::mutex& mtx) {
+void simulate_helper(xt::xarray<double> &arr, int start, int end, double t, double x_0, double a, double v, std::mutex& mtx) {
     int numSims = end - start;
     xt::xarray<double> local_arr = xt::zeros<double>({numSims});
     for (int i=0; i<numSims; i++) {
-        local_arr[i] = simulate_recursion(x_0, t, a, v);
+        local_arr[i] = simulate_recursion(t, x_0, a, v);
     }
     // Your critical section logic here
     {
@@ -59,7 +59,7 @@ void simulate_helper(xt::xarray<double> &arr, int start, int end, double x_0, do
     }
 }
 
-double simulate(double x_0, double t, double a, double v, int total_sims, int numThreads) {
+double simulate(double t, double x_0, double a, double v, int total_sims, int numThreads) {
     xt::xarray<double> arr = xt::zeros<double>({total_sims});
     std::vector<std::thread> threads;
     std::mutex mtx; // Create a mutex
@@ -73,7 +73,7 @@ double simulate(double x_0, double t, double a, double v, int total_sims, int nu
         else {
             end = total_sims;
         }
-        threads.emplace_back(simulate_helper, std::ref(arr), start, end, x_0, t, a, v, std::ref(mtx));
+        threads.emplace_back(simulate_helper, std::ref(arr), start, end, t, x_0, a, v, std::ref(mtx));
     }
     for (int i = 0; i < numThreads; ++i) {
         threads[i].join();
@@ -89,7 +89,7 @@ void find_optimal_numThreads() // Optimal should be 5 threads
         auto start_time = std::chrono::high_resolution_clock::now();
 
         // Run the Monte Carlo simulation
-        double estimated_value = simulate(2., 1., 0.5, sqrt(2), 1000000, 8);
+        double estimated_value = simulate(1., 2., 1., sqrt(2), 1000000, 8);
         cout << estimated_value << endl;
 
         // Record the end time
@@ -112,7 +112,7 @@ int main()
             double t = static_cast<double>(j);
             t /= 10.;
             auto start_time = std::chrono::high_resolution_clock::now();
-            double estimated_value = simulate(x, t, 0.5, sqrt(2), 100000, 6); // Optimal is 5 threads
+            double estimated_value = simulate(t, x, 1., sqrt(2), 100000, 6); // Optimal is 5 threads
             auto end_time = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> elapsed_time = end_time - start_time;
             cout << "x = " << x << ", t = " << t << ", estimated_value = " << estimated_value << ", Execution time: " 
