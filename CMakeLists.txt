@@ -18,6 +18,7 @@ add_executable(Branching_02_analytic_solution Branching_02/analytic_solution.cpp
 add_executable(Branching_02_monte_carlo_simulation Branching_02/monte_carlo_simulation.cpp)
 add_executable(Branching_03_analytic_solution Branching_03/analytic_solution.cpp)
 add_executable(Branching_03_monte_carlo_simulation Branching_03/monte_carlo_simulation.cpp)
+add_executable(Branching_03_monte_carlo_probabilistic Branching_03/monte_carlo_probabilistic.cpp)
 
 target_link_libraries(sample_1 PUBLIC xtensor)
 target_link_libraries(telegraph_equation_analytic_solution PUBLIC xtensor)
@@ -30,3 +31,4 @@ target_link_libraries(Branching_02_analytic_solution PUBLIC xtensor)
 target_link_libraries(Branching_02_monte_carlo_simulation PUBLIC xtensor)
 target_link_libraries(Branching_03_analytic_solution PUBLIC xtensor)
 target_link_libraries(Branching_03_monte_carlo_simulation PUBLIC xtensor)
+target_link_libraries(Branching_03_monte_carlo_probabilistic PUBLIC xtensor)
